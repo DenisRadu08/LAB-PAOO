@@ -1,43 +1,68 @@
 #include "FootballTeam.hpp"
 
-// cerinta 3 - constructorul
+// cerinta 3 / Item 4: Constructor folosind lista de initializare
 FootballTeam::FootballTeam(const std::string& name, int size) 
     : teamName(name), squadSize(size) {
     players = new std::string[squadSize]; // alocare pe heap
     std::cout << "[Constructor] Echipa '" << teamName << "' a fost infiintata (Lot: " << squadSize << " jucatori).\n";
 }
 
-// cerinta 4 -  destructorul
+// cerinta 4 / Item 5: Destructorul silentios
 FootballTeam::~FootballTeam() {
     std::cout << "[Destructor] Echipa '" << teamName << "' este desfiintata. Eliberam memoria lotului.\n";
     delete[] players;
 }
 
-// cerinta 5 -  copy constructor
-// DE CE ESTE NEVOIE: Daca un obiect "FootballTeam" este copiat in altul si folosim copierea default (Shallow Copy),
-// ambele obiecte ar avea pointerul "players" indreptat spre aceeasi zona de memorie. Cand se apeleaza destructorii, 
-// programul va încerca sa stearga aceeasi memorie de doua ori (Double Free) si va crapa.
+// cerinta 5 / Item 12: Copy constructor (Deep Copy pt a evita Double Free)
 FootballTeam::FootballTeam(const FootballTeam& other) 
     : teamName(other.teamName + " (Echipa Secunda)"), squadSize(other.squadSize) {
     
     std::cout << "[Copy Constructor] Copiem tactica si lotul de la '" << other.teamName << "' in '" << teamName << "'.\n";
     
-    // Alocam memorie noua (Deep Copy)
     players = new std::string[squadSize];
     for(int i = 0; i < squadSize; ++i) {
         players[i] = other.players[i];
     }
 }
 
-// cerinta 6 - move constructor
-// DE CE ESTE NEVOIE: Daca intoarcem o echipa dintr-o functie (obiect temporar), copierea intregului array pe heap ar
-// consuma mult timp si memorie degeaba. Move Constructor-ul muta direct "proprietatea" memoriei, fiind foarte eficient.
+
+// ================= NOILE CERINTE (L5) =================
+
+// Item 10, 11, 12 implementate in operatorul =
+FootballTeam& FootballTeam::operator=(const FootballTeam& rhs) {
+    std::cout << "[Copy Assignment] Transferam datele din '" << rhs.teamName << "' in '" << teamName << "'.\n";
+
+    // Item 11: Protectie la auto-atribuire (self-assignment)
+    if (this == &rhs) {
+        std::cout << "  -> [Item 11] Auto-atribuire ignorata. Nu se sterge memoria.\n";
+        return *this; // Item 10
+    }
+
+    // Eliberam memoria lotului curent inainte de a suprascrie
+    delete[] players;
+
+    // Item 12: Copiere completa a tuturor atributelor
+    teamName = rhs.teamName + " (Transferat)";
+    squadSize = rhs.squadSize;
+    
+    players = new std::string[squadSize];
+    for (int i = 0; i < squadSize; ++i) {
+        players[i] = rhs.players[i];
+    }
+
+    // Item 10: Returnam *this pentru a permite inlantuiri (a = b = c)
+    return *this;
+}
+
+// ======================================================
+
+
+// cerinta 6: Move constructor (Steal the memory)
 FootballTeam::FootballTeam(FootballTeam&& other) noexcept 
     : teamName(other.teamName + " (Relocata)"), squadSize(other.squadSize), players(other.players) {
     
     std::cout << "[Move Constructor] Mutam lotul echipei '" << other.teamName << "' fara a re-aloca memorie.\n";
     
-    // anulam pointerul sursei ca sa nu stearga datele in destructorul ei
     other.players = nullptr;
     other.squadSize = 0;
     other.teamName = "Echipa Fantoma (Desfiintata)";
